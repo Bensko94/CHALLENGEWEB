@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist</title>
+    <!-- Load FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+
+    <!-- CSS style -->
+    <style>
+        body {
+          background-color: lightgreen;
+        
+          
+          transition: background-color .5s;
+        }
+        
+        .player {
+          height: 95vh;
+          display: flex;
+          align-items: center;
+          flex-direction: column;
+          justify-content: center;
+        }
+        
+        .details {
+          display: flex;
+          align-items: center;
+          flex-direction: column;
+          justify-content: center;
+          margin-top: 25px;
+        }
+        
+        .track-art {
+          margin: 25px;
+          height: 250px;
+          width: 250px;
+          background-image: url("https://images.pexels.com/photos/262034/pexels-photo-262034.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=750&w=1260");
+          background-size: cover;
+          border-radius: 15%;
+        }
+        
+        .now-playing {
+          font-size: 1rem;
+        }
+        
+        .track-name {
+          font-size: 3rem;
+        }
+        
+        .track-artist {
+          font-size: 1.5rem;
+        }
+        
+        .buttons {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+        }
+        
+        .playpause-track,
+        .prev-track,
+        .next-track {
+          padding: 25px;
+          opacity: 0.8;
+        
+          
+          transition: opacity .2s;
+        }
+        
+        .playpause-track:hover,
+        .prev-track:hover,
+        .next-track:hover {
+          opacity: 1.0;
+        }
+        
+        .slider_container {
+          width: 75%;
+          max-width: 400px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        
+        
+        .seek_slider,
+        .volume_slider {
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
+          height: 5px;
+          background: black;
+          opacity: 0.7;
+          -webkit-transition: .2s;
+          transition: opacity .2s;
+        }
+       
+        .seek_slider::-webkit-slider-thumb,
+        .volume_slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
+          width: 15px;
+          height: 15px;
+          background: white;
+          cursor: pointer;
+          border-radius: 50%;
+        }
+        
+        .seek_slider:hover,
+        .volume_slider:hover {
+          opacity: 1.0;
+        }
+        
+        .seek_slider {
+          width: 60%;
+        }
+        
+        .volume_slider {
+          width: 30%;
+        }
+        
+        .current-time,
+        .total-duration {
+          padding: 10px;
+        }
+        
+        i.fa-volume-down,
+        i.fa-volume-up {
+          padding: 10px;
+        }
+        
+        i.fa-play-circle,
+        i.fa-pause-circle,
+        i.fa-step-forward,
+        i.fa-step-backward {
+          cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="player">
+        <div class="details">
+            <div class="now-playing">PLAYING x OF y</div>
+            <div class="track-art"></div>
+            <div class="track-name">Track Name</div>
+            <div class="track-artist">Track Artist</div>
+        </div>
+        <div class="buttons">
+            <div class="prev-track" onclick="prevTrack()"><i class="fa fa-step-backward fa-2x"></i></div>
+            <div class="playpause-track" onclick="playpauseTrack()"><i class="fa fa-play-circle fa-5x"></i></div>
+            <div class="next-track" onclick="nextTrack()"><i class="fa fa-step-forward fa-2x"></i></div>
+        </div>
+        <div class="slider_container">
+            <div class="current-time">00:00</div>
+            <input type="range" min="1" max="100" value="0" class="seek_slider" onchange="seekTo()">
+            <div class="total-duration">00:00</div>
+        </div>
+        <div class="slider_container">
+            <i class="fa fa-volume-down"></i>
+            <input type="range" min="1" max="100" value="99" class="volume_slider" onchange="setVolume()">
+            <i class="fa fa-volume-up"></i>
+        </div>
+    </div>
+
+    <!-- Main script for the player -->
+    <script>
+        let now_playing = document.querySelector(".now-playing");
+        let track_art = document.querySelector(".track-art");
+        let track_name = document.querySelector(".track-name");
+        let track_artist = document.querySelector(".track-artist");
+        
+        let playpause_btn = document.querySelector(".playpause-track");
+        let next_btn = document.querySelector(".next-track");
+        let prev_btn = document.querySelector(".prev-track");
+        
+        let seek_slider = document.querySelector(".seek_slider");
+        let volume_slider = document.querySelector(".volume_slider");
+        let curr_time = document.querySelector(".current-time");
+        let total_duration = document.querySelector(".total-duration");
+        
+        let track_index = 0;
+        let isPlaying = false;
+        let updateTimer;
+       
+        let curr_track = document.createElement('audio');
+        
+      
+        let track_list = [
+          {
+            name: "BAGHEERA",
+            artist: "VVES",
+            image: "data:image/jpeg;base64,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",
+            path: "VVES-Bagerra.mp3"
+          },
+          {
+            name: "M98B",
+            artist: "JOLAGREEN",
+            image: "https://t2.genius.com/unsafe/340x340/https%3A%2F%2Fimages.genius.com%2Fcda65c72193135237e2e2c3ac264d3a9.1000x1000x1.jpg",
+            path: "JOLAGREEN - M98B.mp3"
+          },
+          {
+            name: "4 CAPUCHES",
+            artist: "JAYWILL",
+            image: "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/25/2b/7c/252b7c87-1c9a-f24f-aac0-5234a8ab4d14/artwork.jpg/600x600bf-60.jpg",
+            path: "4 CAPUCHES.mp3"
+          }
+        ];
+        
+        function loadTrack(track_index) {
+          clearInterval(updateTimer);
+          resetValues();
+        
+          
+          curr_track.src = track_list[track_index].path;
+          curr_track.load();
+        
+          
+          track_art.style.backgroundImage = "url(" + track_list[track_index].image + ")";
+          track_name.textContent = track_list[track_index].name;
+          track_artist.textContent = track_list[track_index].artist;
+          now_playing.textContent = "PLAYING " + (track_index + 1) + " OF " + track_list.length;
+        
+          
+          updateTimer = setInterval(seekUpdate, 1000);
+        
+          
+          curr_track.addEventListener("ended", nextTrack);
+        
+         
+          random_bg_color();
+        }
+        
+        function random_bg_color() {
+        
+          
+          let red = Math.floor(Math.random() * 256) + 64;
+          let green = Math.floor(Math.random() * 256) + 64;
+          let blue = Math.floor(Math.random() * 256) + 64;
+        
+         
+          let bgColor = "rgb(" + red + "," + green + "," + blue + ")";
+        
+          
+          document.body.style.background = bgColor;
+        }
+        
+      
+        function resetValues() {
+          curr_time.textContent = "00:00";
+          total_duration.textContent = "00:00";
+          seek_slider.value = 0;
+        }
+        
+        function playpauseTrack() {
+          if (!isPlaying) playTrack();
+          else pauseTrack();
+        }
+        
+        function playTrack() {
+          curr_track.play();
+          isPlaying = true;
+        
+          
+          playpause_btn.innerHTML = '<i class="fa fa-pause-circle fa-5x"></i>';
+        }
+        
+        function pauseTrack() {
+          curr_track.pause();
+          isPlaying = false;
+        
+          
+          playpause_btn.innerHTML = '<i class="fa fa-play-circle fa-5x"></i>';;
+        }
+        
+        function nextTrack() {
+          if (track_index < track_list.length - 1)
+            track_index += 1;
+          else track_index = 0;
+          loadTrack(track_index);
+          playTrack();
+        }
+        
+        function prevTrack() {
+          if (track_index > 0)
+            track_index -= 1;
+          else track_index = track_list.length;
+          loadTrack(track_index);
+          playTrack();
+        }
+        
+        function seekTo() {
+          seekto = curr_track.duration * (seek_slider.value / 100);
+          curr_track.currentTime = seekto;
+        }
+        
+        function setVolume() {
+          curr_track.volume = volume_slider.value / 100;
+        }
+        
+        function seekUpdate() {
+          let seekPosition = 0;
+        
+          
+          if (!isNaN(curr_track.duration)) {
+            seekPosition = curr_track.currentTime * (100 / curr_track.duration);
+            seek_slider.value = seekPosition;
+        
+            
+            let currentMinutes = Math.floor(curr_track.currentTime / 60);
+            let currentSeconds = Math.floor(curr_track.currentTime - currentMinutes * 60);
+            let durationMinutes = Math.floor(curr_track.duration / 60);
+            let durationSeconds = Math.floor(curr_track.duration - durationMinutes * 60);
+        
+            
+            if (currentSeconds < 10) { currentSeconds = "0" + currentSeconds; }
+            if (durationSeconds < 10) { durationSeconds = "0" + durationSeconds; }
+            if (currentMinutes < 10) { currentMinutes = "0" + currentMinutes; }
+            if (durationMinutes < 10) { durationMinutes = "0" + durationMinutes; }
+        
+            curr_time.textContent = currentMinutes + ":" + currentSeconds;
+            total_duration.textContent = durationMinutes + ":" + durationSeconds;
+          }
+        }
+        
+        
+        loadTrack(track_index);
+    </script>
+</body>
+
+</html>
